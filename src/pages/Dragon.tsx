@@ -71,25 +71,27 @@ function Dragon() {
         </span>
       </div>
 
-      {/* 中央：龍ビジュアル */}
-      <div className="relative flex items-center justify-center my-8 h-[400px]">
-        {/* 大きく広がるオーラ（外側） */}
+      {/* 中央：龍ビジュアル（横方向に光が伸びる演出） */}
+      <div className="relative flex items-center justify-center my-8 h-[420px]">
+        {/* 最外オーラ（縦長の広がり） */}
         <div
-          className="absolute w-[480px] h-[480px] rounded-full blur-3xl pointer-events-none"
-          style={{ background: ATTRIBUTE_AURAS[attribute] }}
+          className="absolute w-[600px] h-[500px] blur-3xl pointer-events-none opacity-80"
+          style={{
+            background: `radial-gradient(ellipse 60% 50% at center, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 80%)`,
+          }}
         />
 
-        {/* 内側の強いオーラ（画像と重なる） */}
+        {/* 横方向に広がる光（画像の左右に光の余韻） */}
         <div
-          className="absolute w-[260px] h-[360px] rounded-full blur-2xl pointer-events-none"
+          className="absolute w-[700px] h-[260px] blur-3xl pointer-events-none opacity-60"
           style={{
-            background: `radial-gradient(ellipse 60% 70% at center, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 70%)`,
+            background: `radial-gradient(ellipse 80% 40% at center, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 75%)`,
           }}
         />
 
         {/* 金の弧（円形プログレス風、回転） */}
         <svg
-          className="absolute m-auto w-[320px] h-[320px] animate-spin-slow pointer-events-none"
+          className="absolute m-auto w-[360px] h-[360px] animate-spin-slow pointer-events-none"
           viewBox="0 0 100 100"
         >
           <circle
@@ -101,21 +103,38 @@ function Dragon() {
             strokeWidth="0.3"
             strokeDasharray="100 200"
             strokeLinecap="round"
-            opacity="0.4"
+            opacity="0.35"
           />
         </svg>
 
-        {/* 龍画像：mask-image でエッジを羽化、mix-blend-mode で暗部を背景に溶かす */}
+        {/* 龍画像：mask を強く羽化、lighten で暗部を背景に溶かす */}
         <img
           src={dragonImage}
           alt={`${attributeLabel}・${stageName}`}
           className="relative z-10 h-[400px] w-auto object-contain animate-breathe"
           style={{
             maskImage:
-              'radial-gradient(ellipse 70% 80% at center, black 35%, rgba(0,0,0,0.6) 65%, transparent 100%)',
+              'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
             WebkitMaskImage:
-              'radial-gradient(ellipse 70% 80% at center, black 35%, rgba(0,0,0,0.6) 65%, transparent 100%)',
-            mixBlendMode: 'screen',
+              'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
+            mixBlendMode: 'lighten',
+            filter: `contrast(1.15) brightness(1.08) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`,
+          }}
+        />
+
+        {/* 画像の左右に「光の余韻」を伸ばす */}
+        <div
+          className="absolute left-[15%] top-1/2 -translate-y-1/2 w-[120px] h-[180px] blur-2xl pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse 80% 50% at right, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 80%)`,
+            opacity: 0.6,
+          }}
+        />
+        <div
+          className="absolute right-[15%] top-1/2 -translate-y-1/2 w-[120px] h-[180px] blur-2xl pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse 80% 50% at left, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 80%)`,
+            opacity: 0.6,
           }}
         />
       </div>
