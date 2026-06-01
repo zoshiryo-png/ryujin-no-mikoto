@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  /* 龍神の命 カラーパレット */
+  --color-deep-blue: #1A3A6E;
+  --color-gold: #B8941F;
+  --color-ink: #1A1A1A;
+  --color-night: #0B1626;
+  --color-moonlight: #F8F6F0;
+  --color-subtle: #555555;
+  --color-paper: #F0EDE5;
+
+  /* フォント */
+  --font-mincho: "Noto Serif JP", "Yu Mincho", "游明朝", "YuMincho", serif;
+  --font-gothic: "Noto Sans JP", "Yu Gothic", "游ゴシック", "YuGothic", sans-serif;
+}
+
+/* ベースリセット */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100svh;
+  background: var(--color-night);
+  color: var(--color-moonlight);
+  font-family: var(--font-gothic);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 光の粒子アニメーション */
+@keyframes particle-drift {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translateY(-24px) translateX(6px);
+    opacity: 0.8;
+  }
+}
+
+.animate-particle {
+  animation-name: particle-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* 結果発表：光の粒子が中央へ集まる */
+@keyframes converge {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+}
+
+/* 金の弧がゆっくり回転 */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+/* 龍の呼吸アニメーション */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* 全体のフェードイン */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main {
+  animation: page-fade-in 1.2s ease-out;
+}
+
+/* モーション尊重 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
