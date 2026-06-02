@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ATTRIBUTE_LABELS, type Attribute } from '../data/questions'
+import { DRAGON_STAGES, getDragonImagePath } from '../data/dragons'
+import { getTodayMessage, todayInKanji } from '../data/messages'
 import {
-  getStage,
-  getStageName,
-  getNextStageName,
-  getDaysToNextStage,
-  getDragonImagePath,
-  toKanjiNumber,
-} from '../data/dragons'
+  getEvolutionStatus,
+  reportDeed,
+  hasDoneTodayDeed,
+  DEED_REWARDS,
+  getKongi,
+  getEn,
+} from '../data/spirit'
+import BottomNav from '../components/BottomNav'
 
 const ATTRIBUTE_AURAS: Record<Attribute, string> = {
   seiryu:
@@ -31,7 +34,18 @@ const ATTRIBUTE_GLOW_COLOR: Record<Attribute, string> = {
 function Dragon() {
   const navigate = useNavigate()
   const [attribute, setAttribute] = useState<Attribute | null>(null)
-  const [totalDays, setTotalDays] = useState(1)
+  const [message, setMessage] = useState<string>('')
+  const [, setKongi] = useState(0)
+  const [, setEn] = useState(0)
+  const [evolution, setEvolution] = useState<{
+    stage: number
+    kongi: number
+    thresholdNext: number | null
+    kongiToNext: number | null
+  } | null>(null)
+  const [devoteDone, setDevoteDone] = useState(false)
+  const [visitDone, setVisitDone] = useState(false)
+  const [showReward, setShowReward] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem('dragon_attribute') as Attribute | null
@@ -40,25 +54,41 @@ function Dragon() {
       return
     }
     setAttribute(stored)
-
-    const days = Number(localStorage.getItem('total_days') || '1')
-    setTotalDays(days)
+    setMessage(getTodayMessage(stored))
+    setKongi(getKongi())
+    setEn(getEn())
+    setEvolution(getEvolutionStatus(stored))
+    setDevoteDone(hasDoneTodayDeed('devote'))
+    setVisitDone(hasDoneTodayDeed('visit_shrine'))
   }, [navigate])
 
-  if (!attribute) return null
+  const handleDeed = (deed: 'devote' | 'visit_shrine') => {
+    const result = reportDeed(deed)
+    if (result.success && result.reward) {
+      setKongi(result.kongi)
+      setEn(result.en)
+      setEvolution(getEvolutionStatus(attribute!))
+      if (deed === 'devote') setDevoteDone(true)
+      if (deed === 'visit_shrine') setVisitDone(true)
+      setShowReward(`+${result.reward.kongi} 魂気`)
+      setTimeout(() => setShowReward(null), 2500)
+    }
+  }
 
-  const stage = getStage(totalDays)
-  const stageName = getStageName(attribute, stage)
-  const nextStageName = getNextStageName(attribute, stage)
-  const daysToNext = getDaysToNextStage(totalDays)
+  if (!attribute || !evolution) return null
+
+  const stage = evolution.stage
+  const stageName = DRAGON_STAGES[attribute][stage - 1]
+  const nextStageName =
+    stage < 6 ? DRAGON_STAGES[attribute][stage] : null
   const dragonImage = getDragonImagePath(attribute, stage)
   const attributeLabel = ATTRIBUTE_LABELS[attribute]
 
   return (
-    <main className="relative min-h-svh px-6 py-8 max-w-xl mx-auto">
-      {/* ヘッダー：左に守護ラベル＆見出し、右上に経過日数 */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
+    <>
+      <main className="relative min-h-svh px-6 pt-8 pb-28 max-w-xl mx-auto">
+        {/* ヘッダー */}
+        <div className="mb-4">
           <div className="font-mincho text-xs text-gold tracking-[0.4em] mb-2">
             守 護 ・ 縁 の 場
           </div>
@@ -66,138 +96,258 @@ function Dragon() {
             あなたの守護龍
           </h1>
         </div>
-        <span className="font-mincho text-sm text-moonlight/60 tracking-[0.3em] mt-3">
-          {toKanjiNumber(totalDays)}日目
-        </span>
-      </div>
 
-      {/* 中央：龍ビジュアル（横方向に光が伸びる演出） */}
-      <div className="relative flex items-center justify-center my-8 h-[420px]">
-        {/* 最外オーラ（縦長の広がり） */}
-        <div
-          className="absolute w-[600px] h-[500px] blur-3xl pointer-events-none opacity-80"
-          style={{
-            background: `radial-gradient(ellipse 60% 50% at center, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 80%)`,
-          }}
-        />
-
-        {/* 横方向に広がる光（画像の左右に光の余韻） */}
-        <div
-          className="absolute w-[700px] h-[260px] blur-3xl pointer-events-none opacity-60"
-          style={{
-            background: `radial-gradient(ellipse 80% 40% at center, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 75%)`,
-          }}
-        />
-
-        {/* 金の弧（円形プログレス風、回転） */}
-        <svg
-          className="absolute m-auto w-[360px] h-[360px] animate-spin-slow pointer-events-none"
-          viewBox="0 0 100 100"
-        >
-          <circle
-            cx="50"
-            cy="50"
-            r="48"
-            fill="none"
-            stroke="#B8941F"
-            strokeWidth="0.3"
-            strokeDasharray="100 200"
-            strokeLinecap="round"
-            opacity="0.35"
-          />
-        </svg>
-
-        {/* 龍画像：mask を強く羽化、lighten で暗部を背景に溶かす */}
-        <img
-          src={dragonImage}
-          alt={`${attributeLabel}・${stageName}`}
-          className="relative z-10 h-[400px] w-auto object-contain animate-breathe"
-          style={{
-            maskImage:
-              'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
-            WebkitMaskImage:
-              'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
-            mixBlendMode: 'lighten',
-            filter: `contrast(1.15) brightness(1.08) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`,
-          }}
-        />
-
-        {/* 画像の左右に「光の余韻」を伸ばす */}
-        <div
-          className="absolute left-[15%] top-1/2 -translate-y-1/2 w-[120px] h-[180px] blur-2xl pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse 80% 50% at right, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 80%)`,
-            opacity: 0.6,
-          }}
-        />
-        <div
-          className="absolute right-[15%] top-1/2 -translate-y-1/2 w-[120px] h-[180px] blur-2xl pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse 80% 50% at left, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 80%)`,
-            opacity: 0.6,
-          }}
-        />
-      </div>
-
-      {/* 段階名 */}
-      <div className="text-center mb-8">
-        <div className="font-mincho text-xs text-gold tracking-[0.4em] mb-3">
-          進 化 の 段 階
-        </div>
-        <h2 className="font-mincho text-3xl text-moonlight tracking-wider mb-3">
-          {stageName}
-        </h2>
-        <p className="font-mincho text-sm text-moonlight/50 tracking-wider">
-          {nextStageName !== null && daysToNext !== null
-            ? `次の姿：${nextStageName} ・ あと${daysToNext}日`
-            : '神域に至りました'}
-        </p>
-      </div>
-
-      {/* 段階インジケータ */}
-      <div className="flex items-center justify-center gap-6 mb-10">
-        {[1, 2, 3, 4, 5, 6].map((s) => (
-          <div key={s} className="flex flex-col items-center gap-2">
-            <span
-              className={`w-2 h-2 rounded-full transition-colors duration-500 ${
-                s <= stage ? 'bg-gold' : 'bg-moonlight/20'
-              }`}
-            />
-            <span
-              className={`font-mincho text-xs ${
-                s <= stage ? 'text-gold/90' : 'text-moonlight/30'
-              }`}
-            >
-              {s}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* 右下：属性 覚醒 */}
-      <div className="text-right mb-10">
-        <span className="font-mincho text-sm text-gold tracking-[0.4em]">
-          {attributeLabel} 覚 醒
-        </span>
-      </div>
-
-      {/* 今日のメッセージへのリンク */}
-      <div className="flex justify-center">
-        <Link
-          to="/message"
-          className="group relative font-mincho text-base text-moonlight/85 tracking-[0.4em] px-10 py-3 border border-gold/40 rounded-full overflow-hidden transition-all duration-500 hover:border-gold/80 hover:text-moonlight"
-        >
-          <span
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        {/* 中央：龍ビジュアル（横方向に光が伸びる演出） */}
+        <div className="relative flex items-center justify-center my-6 h-[380px]">
+          {/* 最外オーラ */}
+          <div
+            className="absolute w-[560px] h-[460px] blur-3xl pointer-events-none opacity-80"
             style={{
-              background:
-                'radial-gradient(circle at center, rgba(184,148,31,0.15), transparent 70%)',
+              background: `radial-gradient(ellipse 60% 50% at center, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 80%)`,
             }}
           />
-          <span className="relative">今 日 の 手 紙 を 読 む</span>
+
+          {/* 横方向の光 */}
+          <div
+            className="absolute w-[680px] h-[240px] blur-3xl pointer-events-none opacity-60"
+            style={{
+              background: `radial-gradient(ellipse 80% 40% at center, ${ATTRIBUTE_GLOW_COLOR[attribute]}, transparent 75%)`,
+            }}
+          />
+
+          {/* 金の弧 */}
+          <svg
+            className="absolute m-auto w-[340px] h-[340px] animate-spin-slow pointer-events-none"
+            viewBox="0 0 100 100"
+          >
+            <circle
+              cx="50"
+              cy="50"
+              r="48"
+              fill="none"
+              stroke="#B8941F"
+              strokeWidth="0.3"
+              strokeDasharray="100 200"
+              strokeLinecap="round"
+              opacity="0.35"
+            />
+          </svg>
+
+          {/* 龍画像 */}
+          <img
+            src={dragonImage}
+            alt={`${attributeLabel}・${stageName}`}
+            className="relative z-10 h-[360px] w-auto object-contain animate-breathe"
+            style={{
+              maskImage:
+                'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
+              WebkitMaskImage:
+                'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
+              mixBlendMode: 'lighten',
+              filter: `contrast(1.15) brightness(1.08) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`,
+            }}
+          />
+        </div>
+
+        {/* 段階名 */}
+        <div className="text-center mb-4">
+          <div className="font-mincho text-xs text-gold tracking-[0.4em] mb-2">
+            進 化 の 段 階
+          </div>
+          <h2 className="font-mincho text-3xl text-moonlight tracking-wider mb-2">
+            {stageName}
+          </h2>
+          <p className="font-mincho text-sm text-moonlight/50 tracking-wider">
+            {nextStageName && evolution.thresholdNext !== null
+              ? `次の姿：${nextStageName} ・ ${evolution.kongi} / ${evolution.thresholdNext} 魂気`
+              : '神域に至りました'}
+          </p>
+        </div>
+
+        {/* 段階インジケータ */}
+        <div className="flex items-center justify-center gap-6 mb-8">
+          {[1, 2, 3, 4, 5, 6].map((s) => (
+            <div key={s} className="flex flex-col items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full transition-colors duration-500 ${
+                  s <= stage ? 'bg-gold' : 'bg-moonlight/20'
+                }`}
+              />
+              <span
+                className={`font-mincho text-xs ${
+                  s <= stage ? 'text-gold/90' : 'text-moonlight/30'
+                }`}
+              >
+                {s}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* 右下：属性 覚醒 */}
+        <div className="text-right mb-6">
+          <span className="font-mincho text-sm text-gold tracking-[0.4em]">
+            {attributeLabel} 覚 醒
+          </span>
+        </div>
+
+        {/* 今日の言霊 */}
+        <div
+          className="relative rounded-2xl border border-gold/25 p-6 mb-6"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(184,148,31,0.06), rgba(11,22,38,0.4))',
+          }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle
+                cx="12"
+                cy="12"
+                r="9"
+                stroke="#B8941F"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M16 12h-4l3-3"
+                stroke="#B8941F"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="font-mincho text-xs text-gold tracking-[0.4em]">
+              今 日 の 言 霊
+            </span>
+          </div>
+          <p className="font-mincho text-base md:text-lg text-moonlight tracking-wider leading-[2.1] mb-4">
+            「{message}」
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="font-mincho text-xs text-gold/80 tracking-[0.3em]">
+              ― {attributeLabel}より
+            </span>
+            <span className="font-mincho text-xs text-moonlight/50 tracking-[0.3em]">
+              {todayInKanji()}
+            </span>
+          </div>
+        </div>
+
+        {/* 行動カード（2つ並列） */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <button
+            onClick={() => handleDeed('devote')}
+            disabled={devoteDone}
+            className={`relative rounded-2xl border p-5 text-left transition-all duration-300 ${
+              devoteDone
+                ? 'border-moonlight/15 opacity-60'
+                : 'border-gold/30 hover:border-gold/60 hover:bg-gold/5'
+            }`}
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(184,148,31,0.04), rgba(11,22,38,0.3))',
+            }}
+          >
+            <div className="w-9 h-9 rounded-full border border-gold/40 flex items-center justify-center mb-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2v6m0 0l3-2m-3 2l-3-2 M12 22a6 6 0 006-6c0-3-2-5-6-8-4 3-6 5-6 8a6 6 0 006 6z"
+                  stroke="#B8941F"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div className="font-mincho text-base text-moonlight tracking-wider mb-1">
+              {DEED_REWARDS.devote.label}
+            </div>
+            <div
+              className={`font-mincho text-xs tracking-[0.2em] ${
+                devoteDone ? 'text-moonlight/40' : 'text-gold/90'
+              }`}
+            >
+              {devoteDone ? '本日 ・ 捧げた' : `+${DEED_REWARDS.devote.kongi} 魂気`}
+            </div>
+          </button>
+
+          <button
+            onClick={() => handleDeed('visit_shrine')}
+            disabled={visitDone}
+            className={`relative rounded-2xl border p-5 text-left transition-all duration-300 ${
+              visitDone
+                ? 'border-moonlight/15 opacity-60'
+                : 'border-gold/30 hover:border-gold/60 hover:bg-gold/5'
+            }`}
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(184,148,31,0.04), rgba(11,22,38,0.3))',
+            }}
+          >
+            <div className="w-9 h-9 rounded-full border border-gold/40 flex items-center justify-center mb-3">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2L7 8h10l-5-6z M5 8v12h14V8 M9 14h6"
+                  stroke="#B8941F"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div className="font-mincho text-base text-moonlight tracking-wider mb-1">
+              {DEED_REWARDS.visit_shrine.label}
+            </div>
+            <div
+              className={`font-mincho text-xs tracking-[0.2em] ${
+                visitDone ? 'text-moonlight/40' : 'text-gold/90'
+              }`}
+            >
+              {visitDone
+                ? '本日 ・ 詣でた'
+                : `+${DEED_REWARDS.visit_shrine.kongi} 魂気`}
+            </div>
+          </button>
+        </div>
+
+        {/* 縁を深める（昇龍への導線） */}
+        <Link
+          to="/ascension"
+          className="block relative rounded-2xl border border-gold/40 p-6"
+          style={{
+            background:
+              'linear-gradient(180deg, rgba(184,148,31,0.1), rgba(11,22,38,0.4))',
+          }}
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="font-mincho text-xs text-gold tracking-[0.4em] mb-2">
+                {attributeLabel} の 契 り
+              </div>
+              <div className="font-mincho text-xl text-moonlight tracking-wider mb-1">
+                縁 を 深 め る
+              </div>
+              <div className="font-mincho text-xs text-moonlight/50 tracking-wider">
+                龍との対話 ・ 顕現 ・ より深き言霊
+              </div>
+            </div>
+            <span className="font-mincho text-gold/80 text-lg">↗</span>
+          </div>
         </Link>
-      </div>
-    </main>
+
+        {/* 魂気が加算された時のフラッシュ */}
+        {showReward && (
+          <div className="fixed inset-x-0 top-1/3 z-40 flex justify-center pointer-events-none">
+            <div className="bg-gold/10 border border-gold/40 rounded-full px-8 py-3 backdrop-blur-md">
+              <span className="font-mincho text-2xl text-gold tracking-[0.3em] animate-pulse">
+                {showReward}
+              </span>
+            </div>
+          </div>
+        )}
+      </main>
+
+      <BottomNav />
+    </>
   )
 }
 

@@ -3,7 +3,8 @@ import Top from './pages/Top'
 import Diagnosis from './pages/Diagnosis'
 import Result from './pages/Result'
 import Dragon from './pages/Dragon'
-import Message from './pages/Message'
+import Pilgrimage from './pages/Pilgrimage'
+import Ascension from './pages/Ascension'
 
 function App() {
   return (
@@ -12,7 +13,8 @@ function App() {
       <Route path="/diagnosis" element={<Diagnosis />} />
       <Route path="/result" element={<Result />} />
       <Route path="/dragon" element={<Dragon />} />
-      <Route path="/message" element={<Message />} />
+      <Route path="/pilgrimage" element={<Pilgrimage />} />
+      <Route path="/ascension" element={<Ascension />} />
     </Routes>
   )
 }
