@@ -96,7 +96,7 @@ function Top() {
         </p>
 
         <Link
-          to="/diagnosis"
+          to={hasDragon ? '/dragon' : '/diagnosis'}
           className="group relative font-mincho text-base md:text-lg text-moonlight tracking-[0.4em] px-12 py-4 border border-gold/60 rounded-full overflow-hidden transition-all duration-500 hover:border-gold hover:tracking-[0.5em]"
         >
           <span
@@ -106,27 +106,32 @@ function Top() {
                 'radial-gradient(circle at center, rgba(184,148,31,0.18), transparent 70%)',
             }}
           />
-          <span className="relative">縁 を 結 ぶ</span>
-        </Link>
-
-        <div className="flex items-center gap-4 mt-8 opacity-70">
-          <span className="w-10 h-px bg-gold/40" />
-          <span className="font-mincho text-xs text-moonlight/60 tracking-[0.4em]">
-            約 3 分 の 内 観
+          <span className="relative">
+            {hasDragon ? '守 護 龍 を 訪 ね る' : '縁 を 結 ぶ'}
           </span>
-          <span className="w-10 h-px bg-gold/40" />
-        </div>
-      </div>
-
-      {/* リピーター動線（diagnosis済みの人だけ） */}
-      {hasDragon && (
-        <Link
-          to="/dragon"
-          className="absolute bottom-16 font-mincho text-sm text-moonlight/40 tracking-[0.3em] hover:text-moonlight/80 transition-colors duration-500"
-        >
-          すでに龍と歩む方は こちら
         </Link>
-      )}
+
+        {/* 初回訪問者にだけ「約3分の内観」を表示 */}
+        {!hasDragon && (
+          <div className="flex items-center gap-4 mt-8 opacity-70">
+            <span className="w-10 h-px bg-gold/40" />
+            <span className="font-mincho text-xs text-moonlight/60 tracking-[0.4em]">
+              約 3 分 の 内 観
+            </span>
+            <span className="w-10 h-px bg-gold/40" />
+          </div>
+        )}
+
+        {/* 診断済みの人には、もう一度診断するリンクを小さく */}
+        {hasDragon && (
+          <Link
+            to="/diagnosis"
+            className="font-mincho text-xs text-moonlight/30 tracking-[0.3em] mt-8 hover:text-moonlight/60 transition-colors"
+          >
+            ― 縁を結び直す ―
+          </Link>
+        )}
+      </div>
 
       {/* フッター */}
       <footer className="absolute bottom-4 font-mincho text-[10px] text-moonlight/30 tracking-[0.3em]">
