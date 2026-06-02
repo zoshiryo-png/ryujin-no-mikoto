@@ -18,6 +18,8 @@ function Pilgrimage() {
   const [offerDone, setOfferDone] = useState(false)
   const [showReward, setShowReward] = useState<string | null>(null)
   const [attribute, setAttribute] = useState<Attribute | null>(null)
+  const [mapImageError, setMapImageError] = useState(false)
+  const [shrineImageErrors, setShrineImageErrors] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const stored = localStorage.getItem('dragon_attribute') as Attribute | null
@@ -40,6 +42,14 @@ function Pilgrimage() {
     }
   }
 
+  const handleShrineImageError = (id: string) => {
+    setShrineImageErrors((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }
+
   if (!attribute) return null
 
   return (
@@ -60,47 +70,114 @@ function Pilgrimage() {
           </span>
         </div>
 
-        {/* 日本地図（簡易SVG） */}
+        {/* 日本地図 */}
         <div
-          className="relative rounded-2xl border border-gold/20 overflow-hidden mb-4 aspect-[4/5]"
+          className="relative rounded-2xl border border-gold/20 overflow-hidden mb-4 aspect-[16/9]"
           style={{
             background:
               'linear-gradient(180deg, rgba(11,22,38,0.8), rgba(20,30,55,0.6))',
           }}
         >
-          {/* 日本地図のシンプルなシルエット */}
+          {/* 画像があれば表示 */}
+          {!mapImageError && (
+            <img
+              src="/japan-map.png"
+              alt="日本地図"
+              onError={() => setMapImageError(true)}
+              className="absolute inset-0 w-full h-full object-cover opacity-90"
+            />
+          )}
+
+          {/* フォールバック：簡易SVG地図 */}
+          {mapImageError && (
+            <svg
+              viewBox="0 0 100 100"
+              className="absolute inset-0 w-full h-full"
+              preserveAspectRatio="xMidYMid meet"
+            >
+              {/* 北海道 */}
+              <path
+                d="M 62,12 Q 68,10 74,13 L 80,17 L 82,22 L 78,28 L 72,30 L 66,27 L 62,21 Z"
+                fill="rgba(60,100,160,0.25)"
+                stroke="rgba(140,170,210,0.5)"
+                strokeWidth="0.3"
+              />
+              {/* 本州 */}
+              <path
+                d="M 28,58 Q 32,52 36,49 L 40,46 L 44,44 L 48,42 L 52,40 L 56,36 L 60,32 L 64,30 L 67,32 L 68,36 L 66,40 L 62,44 L 58,48 L 54,52 L 50,55 L 46,58 L 42,60 L 38,62 L 34,62 L 30,60 Z"
+                fill="rgba(60,100,160,0.25)"
+                stroke="rgba(140,170,210,0.5)"
+                strokeWidth="0.3"
+              />
+              {/* 四国 */}
+              <path
+                d="M 32,65 L 38,63 L 42,66 L 40,70 L 34,70 Z"
+                fill="rgba(60,100,160,0.25)"
+                stroke="rgba(140,170,210,0.5)"
+                strokeWidth="0.3"
+              />
+              {/* 九州 */}
+              <path
+                d="M 20,65 L 28,62 L 32,66 L 31,74 L 26,78 L 22,76 L 18,71 Z"
+                fill="rgba(60,100,160,0.25)"
+                stroke="rgba(140,170,210,0.5)"
+                strokeWidth="0.3"
+              />
+              {/* 沖縄諸島 */}
+              <circle
+                cx="13"
+                cy="88"
+                r="1.5"
+                fill="rgba(60,100,160,0.25)"
+                stroke="rgba(140,170,210,0.5)"
+                strokeWidth="0.3"
+              />
+              <circle
+                cx="11"
+                cy="92"
+                r="0.8"
+                fill="rgba(60,100,160,0.25)"
+                stroke="rgba(140,170,210,0.5)"
+                strokeWidth="0.3"
+              />
+            </svg>
+          )}
+
+          {/* 神社のピン（画像の有無に関わらず上に重ねる） */}
           <svg
             viewBox="0 0 100 100"
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 w-full h-full pointer-events-none"
             preserveAspectRatio="xMidYMid meet"
           >
-            {/* 日本列島の超簡易シルエット */}
-            <path
-              d="M 14,88 Q 18,82 22,82 L 28,72 Q 34,68 38,62 L 42,58 Q 46,54 48,48 L 52,42 Q 56,40 58,36 L 60,32 Q 62,26 64,22 L 68,18 Q 72,16 74,14 L 78,12 L 80,16 L 76,22 L 70,28 L 66,34 L 62,42 L 58,48 L 54,52 L 50,56 L 46,62 L 42,68 L 36,74 L 30,80 L 24,86 L 18,90 Z"
-              fill="rgba(60,100,160,0.25)"
-              stroke="rgba(100,140,200,0.4)"
-              strokeWidth="0.3"
-            />
-            {/* 神社のピン */}
             {SHRINES.map((shrine) => (
               <g key={shrine.id}>
+                {/* 外側の光 */}
                 <circle
                   cx={shrine.mapX}
                   cy={shrine.mapY}
-                  r="1.2"
+                  r="2.4"
                   fill={ATTRIBUTE_PIN_COLOR[shrine.attribute]}
-                  opacity="0.9"
+                  opacity="0.25"
                 >
                   <animate
                     attributeName="r"
-                    values="1.2;1.8;1.2"
+                    values="2.4;3.2;2.4"
                     dur="3s"
                     repeatCount="indefinite"
                   />
                 </circle>
+                {/* 内側の点 */}
+                <circle
+                  cx={shrine.mapX}
+                  cy={shrine.mapY}
+                  r="1.0"
+                  fill={ATTRIBUTE_PIN_COLOR[shrine.attribute]}
+                  opacity="0.95"
+                />
               </g>
             ))}
           </svg>
+
           {/* 「近くの社」表示（モック） */}
           <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-full border border-gold/25 bg-night/60 backdrop-blur px-4 py-2">
             <span className="font-mincho text-xs text-moonlight/70 tracking-[0.2em]">
@@ -160,61 +237,92 @@ function Pilgrimage() {
             聖 な る 鳥 居
           </h2>
           <div className="flex flex-col gap-4">
-            {SHRINES.map((shrine) => (
-              <div
-                key={shrine.id}
-                className="rounded-2xl border border-moonlight/15 overflow-hidden"
-                style={{
-                  background:
-                    'linear-gradient(180deg, rgba(20,30,55,0.4), rgba(11,22,38,0.6))',
-                }}
-              >
-                {/* 上部：神社の想像ビジュアル（属性色のグラデーション） */}
+            {SHRINES.map((shrine) => {
+              const hasImage = !shrineImageErrors.has(shrine.id)
+              return (
                 <div
-                  className="relative h-32 flex items-center justify-center"
+                  key={shrine.id}
+                  className="rounded-2xl border border-moonlight/15 overflow-hidden"
                   style={{
-                    background: `radial-gradient(ellipse at 30% 50%, ${ATTRIBUTE_PIN_COLOR[shrine.attribute]}20, rgba(11,22,38,0.95) 70%)`,
+                    background:
+                      'linear-gradient(180deg, rgba(20,30,55,0.4), rgba(11,22,38,0.6))',
                   }}
                 >
-                  {/* 鳥居シルエット（SVG） */}
-                  <svg
-                    width="80"
-                    height="60"
-                    viewBox="0 0 80 60"
-                    className="opacity-70"
+                  {/* 上部：神社の写真 or プレースホルダー */}
+                  <div
+                    className="relative h-40 overflow-hidden"
+                    style={{
+                      background: !hasImage
+                        ? `radial-gradient(ellipse at 30% 50%, ${ATTRIBUTE_PIN_COLOR[shrine.attribute]}20, rgba(11,22,38,0.95) 70%)`
+                        : 'rgba(11,22,38,0.6)',
+                    }}
                   >
-                    <path
-                      d="M 8,12 L 72,12 L 68,18 L 12,18 Z M 16,4 L 64,4 L 60,12 L 20,12 Z M 22,18 L 22,56 M 58,18 L 58,56 M 18,30 L 62,30"
-                      fill="none"
-                      stroke="#B8941F"
-                      strokeWidth="1.5"
-                      opacity="0.6"
-                    />
-                  </svg>
-                  {/* 属性タグ */}
-                  <div className="absolute top-3 right-3 px-3 py-1 rounded-full border border-gold/40 bg-night/60 backdrop-blur">
-                    <span className="font-mincho text-xs text-gold tracking-[0.3em]">
-                      {ATTRIBUTE_LABELS[shrine.attribute]}
-                    </span>
-                  </div>
-                </div>
+                    {/* 画像（存在する時） */}
+                    {hasImage && (
+                      <img
+                        src={shrine.image}
+                        alt={shrine.name}
+                        onError={() => handleShrineImageError(shrine.id)}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
 
-                {/* 下部：神社名と詳細 */}
-                <div className="p-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-mincho text-base text-moonlight tracking-wider">
-                      {shrine.name}
-                    </div>
-                    <div className="font-mincho text-xs text-moonlight/50 tracking-[0.2em] mt-1">
-                      {shrine.prefecture} ・ {shrine.area}
+                    {/* フォールバック：鳥居シルエット */}
+                    {!hasImage && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <svg
+                          width="90"
+                          height="64"
+                          viewBox="0 0 80 60"
+                          className="opacity-60"
+                        >
+                          <path
+                            d="M 8,12 L 72,12 L 68,18 L 12,18 Z M 16,4 L 64,4 L 60,12 L 20,12 Z M 22,18 L 22,56 M 58,18 L 58,56 M 18,30 L 62,30"
+                            fill="none"
+                            stroke="#B8941F"
+                            strokeWidth="1.5"
+                            opacity="0.7"
+                          />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* 画像の上にうっすら暗いグラデーション（属性タグの可読性確保） */}
+                    {hasImage && (
+                      <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                          background:
+                            'linear-gradient(180deg, rgba(11,22,38,0.3) 0%, transparent 30%, transparent 70%, rgba(11,22,38,0.6) 100%)',
+                        }}
+                      />
+                    )}
+
+                    {/* 属性タグ */}
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full border border-gold/40 bg-night/70 backdrop-blur">
+                      <span className="font-mincho text-xs text-gold tracking-[0.3em]">
+                        {ATTRIBUTE_LABELS[shrine.attribute]}
+                      </span>
                     </div>
                   </div>
-                  <button className="font-mincho text-sm text-gold/90 tracking-[0.2em]">
-                    詣 で る →
-                  </button>
+
+                  {/* 下部：神社名と詳細 */}
+                  <div className="p-4 flex items-center justify-between">
+                    <div>
+                      <div className="font-mincho text-base text-moonlight tracking-wider">
+                        {shrine.name}
+                      </div>
+                      <div className="font-mincho text-xs text-moonlight/50 tracking-[0.2em] mt-1">
+                        {shrine.prefecture} ・ {shrine.area}
+                      </div>
+                    </div>
+                    <button className="font-mincho text-sm text-gold/90 tracking-[0.2em]">
+                      詣 で る →
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
