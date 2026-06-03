@@ -4,6 +4,7 @@ import Diagnosis from './pages/Diagnosis'
 import Result from './pages/Result'
 import Dragon from './pages/Dragon'
 import Pilgrimage from './pages/Pilgrimage'
+import ShrineDetail from './pages/ShrineDetail'
 import Ascension from './pages/Ascension'
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
       <Route path="/result" element={<Result />} />
       <Route path="/dragon" element={<Dragon />} />
       <Route path="/pilgrimage" element={<Pilgrimage />} />
+      <Route path="/shrine/:id" element={<ShrineDetail />} />
       <Route path="/ascension" element={<Ascension />} />
     </Routes>
   )

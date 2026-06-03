@@ -105,3 +105,66 @@ export function getEvolutionStatus(_attribute: Attribute): {
   const kongiToNext = stage < 6 ? KONGI_THRESHOLDS[stage] - kongi : null
   return { stage, kongi, thresholdNext, kongiToNext }
 }
+
+// ─────────────────────────────────────────
+// 神社別の参拝記録（同じ神社は1日1回まで）
+// ─────────────────────────────────────────
+
+const SHRINE_VISIT_KONGI = 50
+const SHRINE_PHOTO_EN = 80
+
+function todayKey(): string {
+  const today = new Date()
+  return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
+}
+
+export function hasVisitedShrineToday(shrineId: string): boolean {
+  return !!localStorage.getItem(`visit_${shrineId}_${todayKey()}`)
+}
+
+export function recordShrineVisit(shrineId: string): {
+  success: boolean
+  kongi: number
+  reward: number
+} {
+  if (hasVisitedShrineToday(shrineId)) {
+    return { success: false, kongi: getKongi(), reward: SHRINE_VISIT_KONGI }
+  }
+  const newKongi = getKongi() + SHRINE_VISIT_KONGI
+  localStorage.setItem('kongi', String(newKongi))
+  localStorage.setItem(`visit_${shrineId}_${todayKey()}`, '1')
+  return { success: true, kongi: newKongi, reward: SHRINE_VISIT_KONGI }
+}
+
+export function hasOfferedPhotoForShrineToday(shrineId: string): boolean {
+  return !!localStorage.getItem(`photo_${shrineId}_${todayKey()}`)
+}
+
+export function recordShrinePhotoOffering(shrineId: string): {
+  success: boolean
+  en: number
+  reward: number
+} {
+  if (hasOfferedPhotoForShrineToday(shrineId)) {
+    return { success: false, en: getEn(), reward: SHRINE_PHOTO_EN }
+  }
+  const newEn = getEn() + SHRINE_PHOTO_EN
+  localStorage.setItem('en', String(newEn))
+  localStorage.setItem(`photo_${shrineId}_${todayKey()}`, '1')
+  return { success: true, en: newEn, reward: SHRINE_PHOTO_EN }
+}
+
+// 神社の累計詣で回数（履歴用、表示用）
+export function getShrineVisitCount(shrineId: string): number {
+  return Number(localStorage.getItem(`visit_count_${shrineId}`) || '0')
+}
+
+export function incrementShrineVisitCount(shrineId: string) {
+  const count = getShrineVisitCount(shrineId) + 1
+  localStorage.setItem(`visit_count_${shrineId}`, String(count))
+}
+
+export const SHRINE_REWARDS = {
+  visit: SHRINE_VISIT_KONGI,
+  photo: SHRINE_PHOTO_EN,
+}

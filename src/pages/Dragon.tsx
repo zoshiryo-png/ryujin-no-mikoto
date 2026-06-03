@@ -133,18 +133,25 @@ function Dragon() {
             />
           </svg>
 
-          {/* 龍画像 */}
+          {/* 龍画像（黒龍は背景に同化しすぎないよう明度を強める） */}
           <img
             src={dragonImage}
             alt={`${attributeLabel}・${stageName}`}
             className="relative z-10 h-[360px] w-auto object-contain animate-breathe"
             style={{
               maskImage:
-                'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
+                attribute === 'kokuryu'
+                  ? 'radial-gradient(ellipse 55% 80% at center, black 30%, rgba(0,0,0,0.5) 65%, transparent 95%)'
+                  : 'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
               WebkitMaskImage:
-                'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
+                attribute === 'kokuryu'
+                  ? 'radial-gradient(ellipse 55% 80% at center, black 30%, rgba(0,0,0,0.5) 65%, transparent 95%)'
+                  : 'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
               mixBlendMode: 'lighten',
-              filter: `contrast(1.15) brightness(1.08) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`,
+              filter:
+                attribute === 'kokuryu'
+                  ? `contrast(1.3) brightness(1.35) saturate(1.2) drop-shadow(0 0 60px ${ATTRIBUTE_GLOW_COLOR[attribute]})`
+                  : `contrast(1.15) brightness(1.08) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`,
             }}
           />
         </div>

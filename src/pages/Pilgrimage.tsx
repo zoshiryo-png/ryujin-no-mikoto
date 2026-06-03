@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { ATTRIBUTE_LABELS, type Attribute } from '../data/questions'
 import { SHRINES } from '../data/shrines'
-import { reportDeed, hasDoneTodayDeed, DEED_REWARDS, getEn } from '../data/spirit'
 import BottomNav from '../components/BottomNav'
 
 const ATTRIBUTE_PIN_COLOR: Record<Attribute, string> = {
@@ -14,9 +13,6 @@ const ATTRIBUTE_PIN_COLOR: Record<Attribute, string> = {
 
 function Pilgrimage() {
   const navigate = useNavigate()
-  const [, setEn] = useState(0)
-  const [offerDone, setOfferDone] = useState(false)
-  const [showReward, setShowReward] = useState<string | null>(null)
   const [attribute, setAttribute] = useState<Attribute | null>(null)
   const [mapImageError, setMapImageError] = useState(false)
   const [shrineImageErrors, setShrineImageErrors] = useState<Set<string>>(new Set())
@@ -28,19 +24,7 @@ function Pilgrimage() {
       return
     }
     setAttribute(stored)
-    setEn(getEn())
-    setOfferDone(hasDoneTodayDeed('offer_photo'))
   }, [navigate])
-
-  const handleOffer = () => {
-    const result = reportDeed('offer_photo')
-    if (result.success && result.reward) {
-      setEn(result.en)
-      setOfferDone(true)
-      setShowReward(`+${result.reward.en} 縁`)
-      setTimeout(() => setShowReward(null), 2500)
-    }
-  }
 
   const handleShrineImageError = (id: string) => {
     setShrineImageErrors((prev) => {
@@ -189,47 +173,12 @@ function Pilgrimage() {
           </div>
         </div>
 
-        {/* 写真奉納カード */}
-        <button
-          onClick={handleOffer}
-          disabled={offerDone}
-          className={`w-full rounded-2xl border p-5 mb-8 flex items-center gap-4 text-left transition-all duration-300 ${
-            offerDone
-              ? 'border-moonlight/15 opacity-60'
-              : 'border-gold/35 hover:border-gold/60 hover:bg-gold/5'
-          }`}
-          style={{
-            background:
-              'linear-gradient(180deg, rgba(184,148,31,0.06), rgba(11,22,38,0.3))',
-          }}
-        >
-          <div className="w-11 h-11 rounded-full border border-gold/50 flex items-center justify-center flex-shrink-0">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 8h4l2-3h6l2 3h4v11H3V8z M12 17a4 4 0 100-8 4 4 0 000 8z"
-                stroke="#B8941F"
-                strokeWidth="1.3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <div className="font-mincho text-base text-moonlight tracking-wider">
-              {DEED_REWARDS.offer_photo.label}
-            </div>
-            <div
-              className={`font-mincho text-xs tracking-[0.2em] mt-1 ${
-                offerDone ? 'text-moonlight/40' : 'text-gold/85'
-              }`}
-            >
-              {offerDone
-                ? '本日 ・ 奉納した'
-                : `+${DEED_REWARDS.offer_photo.en} 縁 ・ 古き物語を解き放つ`}
-            </div>
-          </div>
-          <span className="font-mincho text-gold/70 text-lg">→</span>
-        </button>
+        {/* 案内：神社カードをタップで参拝へ */}
+        <div className="text-center mb-8 mt-2">
+          <p className="font-mincho text-xs text-moonlight/45 tracking-[0.3em] leading-relaxed">
+            社 を 選 び、参 拝 の 写 真 を 奉 納 す る
+          </p>
+        </div>
 
         {/* 神社一覧 */}
         <div className="mb-6">
@@ -240,9 +189,10 @@ function Pilgrimage() {
             {SHRINES.map((shrine) => {
               const hasImage = !shrineImageErrors.has(shrine.id)
               return (
-                <div
+                <Link
                   key={shrine.id}
-                  className="rounded-2xl border border-moonlight/15 overflow-hidden"
+                  to={`/shrine/${shrine.id}`}
+                  className="block rounded-2xl border border-moonlight/15 overflow-hidden hover:border-gold/40 transition-colors duration-500"
                   style={{
                     background:
                       'linear-gradient(180deg, rgba(20,30,55,0.4), rgba(11,22,38,0.6))',
@@ -316,26 +266,16 @@ function Pilgrimage() {
                         {shrine.prefecture} ・ {shrine.area}
                       </div>
                     </div>
-                    <button className="font-mincho text-sm text-gold/90 tracking-[0.2em]">
+                    <span className="font-mincho text-sm text-gold/90 tracking-[0.2em]">
                       詣 で る →
-                    </button>
+                    </span>
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
         </div>
 
-        {/* 縁の加算フラッシュ */}
-        {showReward && (
-          <div className="fixed inset-x-0 top-1/3 z-40 flex justify-center pointer-events-none">
-            <div className="bg-gold/10 border border-gold/40 rounded-full px-8 py-3 backdrop-blur-md">
-              <span className="font-mincho text-2xl text-gold tracking-[0.3em] animate-pulse">
-                {showReward}
-              </span>
-            </div>
-          </div>
-        )}
       </main>
 
       <BottomNav />
