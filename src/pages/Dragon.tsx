@@ -10,6 +10,7 @@ import {
   DEED_REWARDS,
   getKongi,
   getEn,
+  KONGI_THRESHOLDS,
 } from '../data/spirit'
 import BottomNav from '../components/BottomNav'
 
@@ -46,6 +47,7 @@ function Dragon() {
   const [devoteDone, setDevoteDone] = useState(false)
   const [visitDone, setVisitDone] = useState(false)
   const [showReward, setShowReward] = useState<string | null>(null)
+  const [videoError, setVideoError] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem('dragon_attribute') as Attribute | null
@@ -60,6 +62,8 @@ function Dragon() {
     setEvolution(getEvolutionStatus(stored))
     setDevoteDone(hasDoneTodayDeed('devote'))
     setVisitDone(hasDoneTodayDeed('visit_shrine'))
+    // 属性/段階が変わるたびに動画を再試行
+    setVideoError(false)
   }, [navigate])
 
   const handleDeed = (deed: 'devote' | 'visit_shrine') => {
@@ -75,6 +79,28 @@ function Dragon() {
     }
   }
 
+  // ─────────────────────────────────────────
+  // 開発モード専用：段階・属性ジャンプ
+  // 本番ビルド（vite build）では import.meta.env.DEV が false になり
+  // パネル自体が描画されないので、世界観は壊れない
+  // ─────────────────────────────────────────
+  const jumpToStage = (s: number) => {
+    if (!attribute) return
+    const newKongi = KONGI_THRESHOLDS[s - 1]
+    localStorage.setItem('kongi', String(newKongi))
+    setKongi(newKongi)
+    setEvolution(getEvolutionStatus(attribute))
+    setVideoError(false) // 動画フォールバックを再試行
+  }
+
+  const switchAttribute = (a: Attribute) => {
+    localStorage.setItem('dragon_attribute', a)
+    setAttribute(a)
+    setMessage(getTodayMessage(a))
+    setEvolution(getEvolutionStatus(a))
+    setVideoError(false)
+  }
+
   if (!attribute || !evolution) return null
 
   const stage = evolution.stage
@@ -82,7 +108,35 @@ function Dragon() {
   const nextStageName =
     stage < 6 ? DRAGON_STAGES[attribute][stage] : null
   const dragonImage = getDragonImagePath(attribute, stage)
+  const dragonVideo = `/dragons/${attribute}_${stage}.mp4`
   const attributeLabel = ATTRIBUTE_LABELS[attribute]
+
+  // 龍のフィルター（属性ごとの色補正）
+  const dragonFilter =
+    attribute === 'kokuryu'
+      ? `contrast(1.25) brightness(1.3) saturate(1.2) drop-shadow(0 0 60px ${ATTRIBUTE_GLOW_COLOR[attribute]})`
+      : `contrast(1.1) brightness(1.05) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`
+
+  // 画像（PNG）用：背景透過前提の柔らかいマスク
+  const dragonImageStyle = {
+    maskImage:
+      'radial-gradient(circle at center, black 65%, rgba(0,0,0,0.85) 80%, transparent 100%)',
+    WebkitMaskImage:
+      'radial-gradient(circle at center, black 65%, rgba(0,0,0,0.85) 80%, transparent 100%)',
+    mixBlendMode: 'lighten' as const,
+    filter: dragonFilter,
+  }
+
+  // 動画（MP4）用：枠とウォーターマークを消すために攻めたマスク
+  const dragonVideoStyle = {
+    maskImage:
+      'radial-gradient(ellipse 42% 52% at 50% 52%, black 25%, rgba(0,0,0,0.55) 55%, transparent 88%)',
+    WebkitMaskImage:
+      'radial-gradient(ellipse 42% 52% at 50% 52%, black 25%, rgba(0,0,0,0.55) 55%, transparent 88%)',
+    mixBlendMode: 'lighten' as const,
+    transform: 'scale(1.18)',
+    filter: dragonFilter,
+  }
 
   return (
     <>
@@ -133,27 +187,27 @@ function Dragon() {
             />
           </svg>
 
-          {/* 龍画像（黒龍は背景に同化しすぎないよう明度を強める） */}
-          <img
-            src={dragonImage}
-            alt={`${attributeLabel}・${stageName}`}
-            className="relative z-10 h-[360px] w-auto object-contain animate-breathe"
-            style={{
-              maskImage:
-                attribute === 'kokuryu'
-                  ? 'radial-gradient(ellipse 55% 80% at center, black 30%, rgba(0,0,0,0.5) 65%, transparent 95%)'
-                  : 'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
-              WebkitMaskImage:
-                attribute === 'kokuryu'
-                  ? 'radial-gradient(ellipse 55% 80% at center, black 30%, rgba(0,0,0,0.5) 65%, transparent 95%)'
-                  : 'radial-gradient(ellipse 50% 75% at center, black 20%, rgba(0,0,0,0.6) 55%, transparent 95%)',
-              mixBlendMode: 'lighten',
-              filter:
-                attribute === 'kokuryu'
-                  ? `contrast(1.3) brightness(1.35) saturate(1.2) drop-shadow(0 0 60px ${ATTRIBUTE_GLOW_COLOR[attribute]})`
-                  : `contrast(1.15) brightness(1.08) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`,
-            }}
-          />
+          {/* 龍ビジュアル（動画があれば動画、なければ画像） */}
+          {!videoError ? (
+            <video
+              key={dragonVideo}
+              src={dragonVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              onError={() => setVideoError(true)}
+              className="relative z-10 h-[420px] w-[420px] object-cover animate-breathe"
+              style={dragonVideoStyle}
+            />
+          ) : (
+            <img
+              src={dragonImage}
+              alt={`${attributeLabel}・${stageName}`}
+              className="relative z-10 h-[380px] w-auto object-contain animate-breathe"
+              style={dragonImageStyle}
+            />
+          )}
         </div>
 
         {/* 段階名 */}
@@ -352,6 +406,61 @@ function Dragon() {
           </div>
         )}
       </main>
+
+      {/* ─────── 開発モード専用デバッグパネル ─────── */}
+      {/* 本番ビルドでは描画されない（import.meta.env.DEV === false） */}
+      {import.meta.env.DEV && (
+        <div
+          className="fixed top-3 right-3 z-50 flex flex-col gap-2 p-2.5 rounded-xl border border-moonlight/20 backdrop-blur-md"
+          style={{ background: 'rgba(11,22,38,0.75)' }}
+        >
+          {/* ラベル */}
+          <div className="font-mincho text-[10px] text-moonlight/40 tracking-[0.3em] text-center">
+            DEV
+          </div>
+
+          {/* 属性切替 */}
+          <div className="flex gap-1.5">
+            {(['seiryu', 'hakuryu', 'kokuryu', 'kinryu'] as Attribute[]).map(
+              (a) => (
+                <button
+                  key={a}
+                  onClick={() => switchAttribute(a)}
+                  title={ATTRIBUTE_LABELS[a]}
+                  className={`w-7 h-7 font-mincho text-xs rounded-md transition-colors ${
+                    attribute === a
+                      ? 'bg-gold/25 text-gold border border-gold/40'
+                      : 'bg-moonlight/5 text-moonlight/50 border border-moonlight/10 hover:bg-moonlight/10'
+                  }`}
+                >
+                  {ATTRIBUTE_LABELS[a].charAt(0)}
+                </button>
+              )
+            )}
+          </div>
+
+          {/* 段階切替 */}
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4, 5, 6].map((s) => {
+              const isCurrent = stage === s
+              return (
+                <button
+                  key={s}
+                  onClick={() => jumpToStage(s)}
+                  title={`段階 ${s}：${DRAGON_STAGES[attribute][s - 1]}`}
+                  className={`w-6 h-6 font-mincho text-xs rounded-md transition-colors ${
+                    isCurrent
+                      ? 'bg-gold/25 text-gold border border-gold/40'
+                      : 'bg-moonlight/5 text-moonlight/50 border border-moonlight/10 hover:bg-moonlight/10'
+                  }`}
+                >
+                  {s}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </>
