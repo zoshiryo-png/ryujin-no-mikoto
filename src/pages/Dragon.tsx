@@ -106,12 +106,12 @@ function Dragon() {
       ? `contrast(1.25) brightness(1.3) saturate(1.2) drop-shadow(0 0 60px ${ATTRIBUTE_GLOW_COLOR[attribute]})`
       : `contrast(1.1) brightness(1.05) drop-shadow(0 0 50px ${ATTRIBUTE_GLOW_COLOR[attribute]})`
 
-  // 画像（PNG）用：背景透過前提の柔らかいマスク
+  // 画像（PNG）用：closest-sideで内接円に絞り、上下辺の薄い見切れを解消
   const dragonImageStyle = {
     maskImage:
-      'radial-gradient(circle at center, black 65%, rgba(0,0,0,0.85) 80%, transparent 100%)',
+      'radial-gradient(circle closest-side at center, black 72%, rgba(0,0,0,0.55) 88%, transparent 100%)',
     WebkitMaskImage:
-      'radial-gradient(circle at center, black 65%, rgba(0,0,0,0.85) 80%, transparent 100%)',
+      'radial-gradient(circle closest-side at center, black 72%, rgba(0,0,0,0.55) 88%, transparent 100%)',
     mixBlendMode: 'lighten' as const,
     filter: dragonFilter,
   }
@@ -194,7 +194,7 @@ function Dragon() {
             <img
               src={dragonImage}
               alt={`${attributeLabel}・${stageName}`}
-              className="relative z-10 h-[380px] w-auto object-contain animate-breathe"
+              className="relative z-10 h-[500px] w-[500px] object-cover animate-breathe"
               style={dragonImageStyle}
             />
           )}
