@@ -14,17 +14,6 @@ import {
 } from '../data/spirit'
 import BottomNav from '../components/BottomNav'
 
-const ATTRIBUTE_AURAS: Record<Attribute, string> = {
-  seiryu:
-    'radial-gradient(circle, rgba(120,170,230,0.45), rgba(60,100,180,0.2) 40%, transparent 75%)',
-  hakuryu:
-    'radial-gradient(circle, rgba(230,235,245,0.4), rgba(200,210,230,0.18) 40%, transparent 75%)',
-  kokuryu:
-    'radial-gradient(circle, rgba(140,110,200,0.45), rgba(70,40,130,0.2) 40%, transparent 75%)',
-  kinryu:
-    'radial-gradient(circle, rgba(245,205,110,0.45), rgba(184,148,31,0.2) 40%, transparent 75%)',
-}
-
 const ATTRIBUTE_GLOW_COLOR: Record<Attribute, string> = {
   seiryu: 'rgba(120,170,230,0.5)',
   hakuryu: 'rgba(230,235,245,0.45)',
