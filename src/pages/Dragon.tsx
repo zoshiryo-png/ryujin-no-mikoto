@@ -127,14 +127,15 @@ function Dragon() {
     filter: dragonFilter,
   }
 
-  // 動画（MP4）用：枠とウォーターマークを消すために攻めたマスク
+  // 動画（MP4）用：龍が画面を支配する没入感重視
+  // closest-sideで真円、中央の「くっきり領域」を広く取って龍の存在感を強める
   const dragonVideoStyle = {
     maskImage:
-      'radial-gradient(ellipse 42% 52% at 50% 52%, black 25%, rgba(0,0,0,0.55) 55%, transparent 88%)',
+      'radial-gradient(circle closest-side at center, black 72%, rgba(0,0,0,0.5) 88%, transparent 100%)',
     WebkitMaskImage:
-      'radial-gradient(ellipse 42% 52% at 50% 52%, black 25%, rgba(0,0,0,0.55) 55%, transparent 88%)',
+      'radial-gradient(circle closest-side at center, black 72%, rgba(0,0,0,0.5) 88%, transparent 100%)',
     mixBlendMode: 'lighten' as const,
-    transform: 'scale(1.18)',
+    transform: 'scale(1.0)',
     filter: dragonFilter,
   }
 
@@ -151,8 +152,8 @@ function Dragon() {
           </h1>
         </div>
 
-        {/* 中央：龍ビジュアル（横方向に光が伸びる演出） */}
-        <div className="relative flex items-center justify-center my-6 h-[380px]">
+        {/* 中央：龍ビジュアル（横方向に光が伸びる演出、没入感重視で大きめに） */}
+        <div className="relative flex items-center justify-center my-6 h-[460px]">
           {/* 最外オーラ */}
           <div
             className="absolute w-[560px] h-[460px] blur-3xl pointer-events-none opacity-80"
@@ -197,7 +198,7 @@ function Dragon() {
               muted
               playsInline
               onError={() => setVideoError(true)}
-              className="relative z-10 h-[420px] w-[420px] object-cover animate-breathe"
+              className="relative z-10 h-[500px] w-[500px] object-cover animate-breathe"
               style={dragonVideoStyle}
             />
           ) : (
